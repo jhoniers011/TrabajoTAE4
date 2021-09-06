@@ -58,53 +58,51 @@ data <- full_join(datos,depositos,by="Fecha")
 #Dia de la semana
 data$dia_semana <- weekdays(data$Fecha)
 
-###Numero de la semana por mes
-##monthweeks <- function(x) {
-##    ceiling(as.numeric(format(x, "%d")) / 7)
-##}
-##data$numero_semana <- lapply(data$Fecha,monthweeks)
-##
-##data$Fecha <- as.Date(data$Fecha)
+#Numero de la semana por mes
+monthweeks <- function(x) {
+   as.character(ceiling(as.numeric(format(x, "%d")) / 7))
+}
+data$numero_semana <- factor(lapply(data$Fecha,monthweeks),levels = c("1","2","3","4","5"))
 ```
 
 
 ```{r}
 ###Dias festivos
-##pascua <- function(x){#Dado un año retorna la fecha de la pascua.
-##  #https://www.uv.es/sofuen/actividades/actividad4/fechadepascua.pdf
-##  x <- as.numeric(x)
-##  a <- x%%19
-##  b <- x%%4
-##  c <- x%%7
-##  d <- (19*a + 24)%%30
-##  e <- (2*b + 4*c + 6*d + 5)%%7
-##  M <- 24
-##  N <- 5
-##  if((22+d+e) < 32){
-##    return(as.Date(paste(as.character(x),"-03-",as.character((22+d+e)),sep = ##""),format="%Y-%m-%d"))
-##  }
-##  else{
-##    return(as.Date(paste(as.character(x),"-04-",as.character(d+e-9),sep = ##""),format="%Y-%m-%d"))
-##  }
-##}
-##
-##mover_festivo <- function(x){ #Dada una fecha, mover el festivo a lunes.
-##  dia_semana <- weekdays(x)
-##  result = switch(  
-##    dia_semana,  
-##    "lunes"= x,
-##    "martes"= x+6,  
-##    "miércoles"= x+5,  
-##    "jueves"= x+4,
-##    "viernes"= x+3,
-##    "sábado"= x+2,
-##    "domingo"= x+1)
-##  
-##    
-##  return(result)
-##
-##}
-##
+pascua <- function(x){#Dado un año retorna la fecha de la pascua.
+  #https://www.uv.es/sofuen/actividades/actividad4/fechadepascua.pdf
+  x <- as.numeric(x)
+  a <- x%%19
+  b <- x%%4
+  c <- x%%7
+  d <- (19*a + 24)%%30
+  e <- (2*b + 4*c + 6*d + 5)%%7
+  M <- 24
+  N <- 5
+  if((22+d+e) < 32){
+    return(as.Date(paste(as.character(x),"-03-",as.character((22+d+e)),sep = ""),format="%Y-%m-%d"))
+  }
+  else{
+    return(as.Date(paste(as.character(x),"-04-",as.character(d+e-9),sep = ""),format="%Y-%m-%d"))
+  }
+}
+
+mover_festivo <- function(x){ #Dada una fecha, mover el festivo a lunes.
+ dia_semana <- weekdays(x)
+ result = switch(
+   dia_semana,
+   "lunes"= x,
+   "martes"= x+6,
+   "miércoles"= x+5,
+   "jueves"= x+4,
+   "viernes"= x+3,
+   "sábado"= x+2,
+   "domingo"= x+1)
+
+
+ return(result)
+
+}
+
 ##festivo <- function(x){#Dada una fecha retornar si es festivo
 ##  
 ##  anio <- format(x,format = "%Y")
@@ -233,7 +231,7 @@ database_2018 <- database_2018[,-2]
 ```
 
 
-
+--------------------------------------------------------------------------------------------------------
 
 ```{r}
 write.table(data, "datos2012_2017", sep="\t")
