@@ -13,6 +13,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library("readxl")
 datos <- read_excel("archivos/registros_autos_entrenamiento.xlsx")
+
+#Fechas 2018
+Fechas_2018 <- as.Date("2018-01-01",format= "%Y-%m-%d") + 0:364
+Fechas_2018 <- data.frame(Fechas_2018)
+names(Fechas_2018) <- c("Fecha")
+Fechas_2018['Unidades'] <- NA
+datos <- rbind(datos,Fechas_2018)
 ```
 
 ```{r}
@@ -42,7 +49,7 @@ depositos <- depositos %>% mutate(Fecha = ymd(Fecha)) %>%
        ceiling_date(Fecha, unit="week")-days(1), by="day"), M1,M2,M3) %>%
 as.data.frame()
 
-depositos <- depositos %>% filter(Fecha >= "2012-01-01" & Fecha <= "2017-12-31")
+depositos <- depositos %>% filter(Fecha >= "2012-01-01" & Fecha <= "2018-12-31")
 
 data <- full_join(datos,depositos,by="Fecha")
 ```
@@ -147,27 +154,12 @@ desempleo <- desempleo %>% mutate(Fecha = ymd(Fecha)) %>%
        ceiling_date(Fecha, unit="month")-days(1), by="day"), tasa_desempleo) %>%
 as.data.frame()
 
-desempleo <- desempleo %>% filter(Fecha >= "2012-01-01" & Fecha <= "2017-12-31")
+desempleo <- desempleo %>% filter(Fecha >= "2012-01-01" & Fecha <= "2018-12-31")
 
 data <- full_join(data,desempleo,by="Fecha")
 
 ```
 
-```{r}
-#Salario minimo
-salario_minimo <- read_excel("archivos/Salario_minimo.xlsx", skip = 5)
-salario_minimo <- salario_minimo[,c(1,3)]
-names(salario_minimo)[1] <- "Fecha"
-names(salario_minimo)[2] <- "salario"
-salario_minimo$Fecha <- as.Date(paste(salario_minimo$Fecha,"-01-01",sep = ""),format = "%Y-%m-%d")
-salario_minimo <- salario_minimo %>% mutate(Fecha = ymd(Fecha)) %>%
-  group_by(Fecha) %>%
-  expand(Fecha = seq(floor_date(Fecha, unit = "year"),
-       ceiling_date(Fecha, unit="year")-days(1), by="day"), salario) %>%
-as.data.frame()
-salario_minimo <- salario_minimo %>% filter(Fecha >= "2012-01-01" & Fecha <= "2017-12-31")
-data <- full_join(data,salario_minimo,by="Fecha")
-```
 
 ```{r}
 #Inflacion
@@ -181,7 +173,7 @@ inflacion <- inflacion %>% mutate(Fecha = ymd(Fecha)) %>%
   expand(Fecha = seq(floor_date(Fecha, unit = "month"),
        ceiling_date(Fecha, unit="month")-days(1), by="day"), Inflacion) %>%
 as.data.frame()
-inflacion <- inflacion %>% filter(Fecha >= "2012-01-01" & Fecha <= "2017-12-31")
+inflacion <- inflacion %>% filter(Fecha >= "2012-01-01" & Fecha <= "2018-12-31")
 data <- full_join(data,inflacion,by="Fecha")
 ```
 
@@ -190,7 +182,7 @@ data <- full_join(data,inflacion,by="Fecha")
 trm <- read_excel("archivos/Trm.xlsx", skip = 7)
 names(trm)[1] <- "Fecha"
 names(trm)[2] <- "Trm"
-trm <- trm %>% filter(Fecha >= "2011-12-31" & Fecha <= "2017-12-31")
+trm <- trm %>% filter(Fecha >= "2011-12-31" & Fecha <= "2018-12-31")
 data <- full_join(data,trm,by="Fecha")
 
 ```
@@ -207,11 +199,42 @@ icc <- icc %>% mutate(Fecha = ymd(Fecha)) %>%
   expand(Fecha = seq(floor_date(Fecha, unit = "month"),
        ceiling_date(Fecha, unit="month")-days(1), by="day"), icc) %>%
 as.data.frame()
-icc <- icc %>% filter(Fecha >= "2012-01-01" & Fecha <= "2017-12-31")
+icc <- icc %>% filter(Fecha >= "2012-01-01" & Fecha <= "2018-12-31")
 data <- full_join(data,icc,by="Fecha")
 ```
 
-###La base de datos final se llama data.
+```{r}
+#IPC
+ipc <- read_excel("archivos/IPC.xlsx")
+#icc <- icc[,c(1,2)]
+names(ipc)[1] <- "Fecha"
+names(ipc)[2] <- "ipc"
+ipc <- ipc %>% mutate(Fecha = ymd(Fecha)) %>%
+  group_by(Fecha) %>%
+  expand(Fecha = seq(floor_date(Fecha, unit = "month"),
+       ceiling_date(Fecha, unit="month")-days(1), by="day"), ipc) %>%
+as.data.frame()
+ipc <- ipc %>% filter(Fecha >= "2012-01-01" & Fecha <= "2018-12-31")
+data <- full_join(data,ipc,by="Fecha")
+```
+
+```{r}
+#Importaciones
+importaciones <- read_excel("archivos/importaciones.xlsx")
+data <- as.data.frame(cbind(data, importaciones))
+```
+
+###Separación en 3 bases de datos.
+```{r}
+database_2012_2016 <- data %>% filter(Fecha >= "2012-01-01" & Fecha <= "2016-12-31")
+database_2017 <- data %>% filter(Fecha >= "2017-01-01" & Fecha <= "2017-06-30")
+database_2018 <- data %>% filter(Fecha >= "2018-01-01" & Fecha <= "2018-12-31")
+database_2018 <- database_2018[,-2]
+```
+
+
+
+
 ```{r}
 write.table(data, "datos2012_2017", sep="\t")
 ```
