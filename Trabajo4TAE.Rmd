@@ -221,74 +221,68 @@ importaciones <- read_excel("archivos/importaciones.xlsx")
 data <- as.data.frame(cbind(data, importaciones))
 ```
 
+```{r}
+#Paginas web vehiculos, unidades vendidas al mes, vehiculos e incremento a la gasolina
+data <- data %>% filter(Fecha <= "2018-06-30")
+consultas <- read_excel("Archivos/consultas.xlsx")
+data <- as.data.frame(cbind(data, consultas))
+```
+
 ###Separación en 3 bases de datos.
 ```{r}
 database_2012_2016 <- data %>% filter(Fecha >= "2011-12-31" & Fecha <= "2016-12-31")
 database_2017 <- data %>% filter(Fecha >= "2016-12-31" & Fecha <= "2017-06-30")
-database_2018 <- data %>% filter(Fecha >= "2017-12-31" & Fecha <= "2018-12-31")
+database_2018 <- data %>% filter(Fecha >= "2017-12-31" & Fecha <= "2018-06-30")
 database_2018 <- database_2018[,-2]
 ```
 
 
 --------------------------------------------------------------------------------------------------------
 
-```{r}
-write.table(data, "datos2012_2017", sep="\t")
-```
-
-```{r}
-library(fitdistrplus)          ##Paquete para ajustar distribuciones a los datos
-attach(data)
-descdist(Unidades, discrete = FALSE) ##Función para encontrar mejor ajuste
-```
-
-
-```{r}
-distribucion <- fitdist(Unidades, "norm") ##Ajustando los datos a una distribución normal
-plot(distribucion) ##Chequeo gráfico del ajuste
-```
-
-## Modelo Aditivo Generalizado (GAM) repuesta tipo Poisson 
-
-```{r}
-library(mgcv)
-mod1 <- gam(Unidades ~ anio + s(mes) + s(dia) + s(M3) + dia_semana + s(tasa_desempleo) + s(Trm) + s(icc), family = poisson(link = "log"), data = data)
-
-summary(mod1)
-```
-
 ### Modelo Lineal Generalizado con repuesta tipo Poisson
+
 ```{r, message=FALSE}
 library(rsq)
-mod2 <- glm(Unidades ~ anio + mes + dia + M3 + dia_semana + tasa_desempleo + Trm + icc, family = poisson(link = "log"), data = data)
-summary(mod2)
-rsq(mod2, adj = TRUE)
+library(knitr)
+mod1 <- glm(Unidades ~ mes + dia + M3 + dia_semana + numero_semana + feriado + tasa_desempleo + Inflacion + Trm + icc + impo + tu_carro + revista_motor + carroya + unidades_vendidasalmes+ipc, family = poisson(link = "log"), data = database_2012_2016)
+
+
+backward <- step(mod1, trace = 0)
+formula(backward)
+mod1final <- glm(Unidades ~ mes + dia + M3 + dia_semana + numero_semana + feriado + tasa_desempleo + Inflacion + Trm + icc + impo + tu_carro + revista_motor + carroya + unidades_vendidasalmes, family = poisson(link = "log"), data = database_2012_2016)
+
+R2mod1 <- data.frame(`R cuadrado modelo` = rsq(mod1), `R cuadrado ajustado` = rsq(mod1, adj = TRUE))
+
+R2mod1final <- data.frame(`R cuadrado modelo` = rsq(mod1final), `R cuadrado ajustado` = rsq(mod1final, adj = TRUE))
+
+R2mod1 %>% kable(caption = "Modelo Lineal Generalizado sin stepwise", digits = 4)
+R2mod1final %>% kable(caption = "Modelo Lineal Generalizado con stepwise", digits = 4)
 ```
 
+Los modelo anteriores arrojan resultados muy similares en cuanto al $R^2$, sin embargo por el principio de parsimonia el modelo que se elige es el modelo obtenido a partir del stepwise hacia atrás.
+
 ```{r}
-library(readxl)
-consultas <- read_excel("Archivos/consultas.xlsx")
-data <- as.data.frame(cbind(data, consultas))
+summary(mod1final)
 ```
+
+
 
 ## Modelo Aditivo Generalizado (GAM) repuesta tipo Poisson 
 
 ```{r, message=FALSE}
 library(mgcv)
-attach(data)
-mod3 <- gam(Unidades ~ s(mes) + s(dia) + s(M3) + dia_semana + s(tasa_desempleo) + s(Trm) + s(icc) + s(tu_carro) + s(revista_motor) + s(carroya) + s(unidades_vendidasalmes) + feriado + s(numero_semana) + s(importaciones), family = poisson(link = "log"), data = data)
 
-summary(mod3)
+mod2 <- gam(Unidades ~ s(mes) + s(dia) + s(M3) + dia_semana + numero_semana + feriado + s(tasa_desempleo) + s(Inflacion) + s(Trm) + s(icc) + s(impo) + s(tu_carro) + s(revista_motor) + s(carroya) + s(unidades_vendidasalmes) + s(ipc), family = poisson(link = "log"), data = database_2012_2016)
+
+R2mod2 <- data.frame(`R cuadrado modelo` = rsq(mod2), `R cuadrado ajustado` = rsq(mod2, adj = TRUE))
+
+R2mod2 %>% kable(caption = "Modelo Aditivo Generalizado con respuesta Poisson", digits = 3)
 ```
 
-## Modelo Aditivo Generalizado (GAM) repuesta tipo Poisson 
+El $R^2$ obtenido con la metodologia del modelo generalizado aditivo es un poco mayor al obtenido en el modelo anterior.
 
 ```{r}
-library(mgcv)
-
-mod4 <- gam(Unidades ~ anio + s(mes) + s(dia) + s(M3) + dia_semana + s(tasa_desempleo) + s(Trm) + s(icc) + s(tu_carro) + s(revista_motor) + s(carroya) + s(unidades_vendidasalmes) + feriado + s(numero_semana) + s(importaciones) + s(vehiculos)+ s(incremento_gasolina), family = poisson(link = "log"), data = data)
-
-summary(mod4)
+summary(mod2)
 ```
 
 ## Modelo Aditivo Generalizado (GAM) repuesta tipo Normal 
@@ -296,8 +290,37 @@ summary(mod4)
 ```{r}
 library(mgcv)
 
-mod5 <- gam(Unidades ~ anio + s(mes) + s(dia) + s(M3) + dia_semana + s(tasa_desempleo) + s(Trm) + s(icc) + s(tu_carro) + s(revista_motor) + s(carroya) + s(unidades_vendidasalmes) + feriado + s(numero_semana) + s(importaciones) + s(vehiculos), family = gaussian(link = "identity"), data = data)
+mod3 <- gam(Unidades ~ s(mes) + s(dia) + s(M3) + dia_semana + numero_semana + feriado + s(tasa_desempleo) + s(Inflacion) + s(Trm) + s(icc) + s(impo) + s(tu_carro) + s(revista_motor) + s(carroya) + s(unidades_vendidasalmes) + s(ipc), family = gaussian(link = "identity"), data = database_2012_2016)
 
-summary(mod5)
+R2mod3 <- data.frame(`R cuadrado modelo` = rsq(mod3), `R cuadrado ajustado` = rsq(mod3, adj = TRUE))
+
+R2mod3 %>% kable(caption = "Modelo Aditivo Generalizado con respuesta Normal", digits = 3)
+```
+Usando como función de enlace la distribución normal, se observa que el $R^2$ disminuye considerablemente.
+
+```{r}
+summary(mod3)
+```
+
+
+Dado los tres modelo anteriores, se elige el modelo 2 el cual es un modelo aditivo generalizado con respuesta Poisson para llevar a cabo las respectivas prediciones.
+
+## Primer archivo plano
+
+```{r}
+predicion2012_1016 <- round(predict(mod2, data = database_2012_2016, type = "response"), 0)
+predicion2012_1016datos <- data.frame(database_2012_2016$Fecha, predicion2012_1016)
+write.table(predicion2012_1016datos, "PrimerArchivoPlano.csv", sep=",")
+```
+
+```{r}
+predicion2017 <- round(predict(mod1, newdata = database_2017, type = "response"), 0)
+
+R2_2017 <- sum(((database_2017$Unidades-predicion2017)^2))/sum(((database_2017$Unidades-mean(database_2017$Unidades))^2))
+
+R2_2017
+```
+```{r}
+
 ```
 
