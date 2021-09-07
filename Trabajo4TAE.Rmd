@@ -223,9 +223,9 @@ data <- as.data.frame(cbind(data, importaciones))
 
 ###Separación en 3 bases de datos.
 ```{r}
-database_2012_2016 <- data %>% filter(Fecha >= "2012-01-01" & Fecha <= "2016-12-31")
-database_2017 <- data %>% filter(Fecha >= "2017-01-01" & Fecha <= "2017-06-30")
-database_2018 <- data %>% filter(Fecha >= "2018-01-01" & Fecha <= "2018-12-31")
+database_2012_2016 <- data %>% filter(Fecha >= "2011-12-31" & Fecha <= "2016-12-31")
+database_2017 <- data %>% filter(Fecha >= "2016-12-31" & Fecha <= "2017-06-30")
+database_2018 <- data %>% filter(Fecha >= "2017-12-31" & Fecha <= "2018-12-31")
 database_2018 <- database_2018[,-2]
 ```
 
