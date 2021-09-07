@@ -68,6 +68,7 @@ data$numero_semana <- factor(lapply(data$Fecha,monthweeks),levels = c("1","2","3
 
 ```{r}
 ###Dias festivos
+data$Fecha <- as.Date(data$Fecha)
 pascua <- function(x){#Dado un año retorna la fecha de la pascua.
   #https://www.uv.es/sofuen/actividades/actividad4/fechadepascua.pdf
   x <- as.numeric(x)
@@ -103,39 +104,37 @@ mover_festivo <- function(x){ #Dada una fecha, mover el festivo a lunes.
 
 }
 
-##festivo <- function(x){#Dada una fecha retornar si es festivo
-##  
-##  anio <- format(x,format = "%Y")
-##  
-##  festivos <- c(as.Date(format(paste(as.character(anio),"-01-01",sep = ""),format = ##"%Y-%m-%d")),
-##                mover_festivo(as.Date(format(paste(as.character(anio),"-01-06",sep = ##""),format = "%Y-%m-%d"))),
-##                mover_festivo(as.Date(format(paste(as.character(anio),"-03-19",sep = ##""),format = "%Y-%m-%d"))),
-##                pascua(anio) - 3,
-##                pascua(anio) - 2,
-##                as.Date(format(paste(as.character(anio),"-05-01",sep = ""),format = ##"%Y-%m-%d")),
-##                mover_festivo(pascua(anio)+40),
-##                mover_festivo(pascua(anio)+60),
-##                mover_festivo(as.Date(format(paste(as.character(anio),"-06-11",sep = ##""),format = "%Y-%m-%d"))),
-##                mover_festivo(as.Date(format(paste(as.character(anio),"-06-29",sep = ##""),format = "%Y-%m-%d"))),
-##                as.Date(format(paste(as.character(anio),"-07-20",sep = ""),format = ##"%Y-%m-%d")),
-##                as.Date(format(paste(as.character(anio),"-08-07",sep = ""),format = ##"%Y-%m-%d")),
-##                mover_festivo(as.Date(format(paste(as.character(anio),"-08-15",sep = ##""),format = "%Y-%m-%d"))),
-##                mover_festivo(as.Date(format(paste(as.character(anio),"-10-12",sep = ##""),format = "%Y-%m-%d"))),
-##                mover_festivo(as.Date(format(paste(as.character(anio),"-11-01",sep = ##""),format = "%Y-%m-%d"))),
-##                mover_festivo(as.Date(format(paste(as.character(anio),"-11-11",sep = ##""),format = "%Y-%m-%d"))),
-##                as.Date(format(paste(as.character(anio),"-12-08",sep = ""),format = ##"%Y-%m-%d")),
-##                as.Date(format(paste(as.character(anio),"-12-25",sep = ""),format = ##"%Y-%m-%d")))
-##  
-##  
-##  return(x %in% festivos)
-##  
-##  
-##}
-##
-##
-##data$feriado <- lapply(data$Fecha,festivo)
+festivo <- function(x){#Dada una fecha retornar si es festivo
+  
+  anio <- format(x,format = "%Y")
+  
+  festivos <- c(as.Date(format(paste(as.character(anio),"-01-01",sep = ""),format = "%Y-%m-%d")),
+                mover_festivo(as.Date(format(paste(as.character(anio),"-01-06",sep = ""),format = "%Y-%m-%d"))),
+                mover_festivo(as.Date(format(paste(as.character(anio),"-03-19",sep = ""),format = "%Y-%m-%d"))),
+                pascua(anio) - 3,
+                pascua(anio) - 2,
+                as.Date(format(paste(as.character(anio),"-05-01",sep = ""),format = "%Y-%m-%d")),
+                mover_festivo(pascua(anio)+40),
+                mover_festivo(pascua(anio)+60),
+                mover_festivo(as.Date(format(paste(as.character(anio),"-06-11",sep = ""),format = "%Y-%m-%d"))),
+                mover_festivo(as.Date(format(paste(as.character(anio),"-06-29",sep = ""),format = "%Y-%m-%d"))),
+                as.Date(format(paste(as.character(anio),"-07-20",sep = ""),format = "%Y-%m-%d")),
+                as.Date(format(paste(as.character(anio),"-08-07",sep = ""),format = "%Y-%m-%d")),
+                mover_festivo(as.Date(format(paste(as.character(anio),"-08-15",sep = ""),format = "%Y-%m-%d"))),
+                mover_festivo(as.Date(format(paste(as.character(anio),"-10-12",sep = ""),format = "%Y-%m-%d"))),
+                mover_festivo(as.Date(format(paste(as.character(anio),"-11-01",sep = ""),format = "%Y-%m-%d"))),
+                mover_festivo(as.Date(format(paste(as.character(anio),"-11-11",sep = ""),format = "%Y-%m-%d"))),
+                as.Date(format(paste(as.character(anio),"-12-08",sep = ""),format = "%Y-%m-%d")),
+                as.Date(format(paste(as.character(anio),"-12-25",sep = ""),format = "%Y-%m-%d")))
+  
+  return(x %in% festivos)
+  
+  
+}
 
- 
+data$feriado <- lapply(data$Fecha,festivo)
+data$feriado <- as.integer(data$feriado == "TRUE")
+data$feriado <- factor(data$feriado,levels = c(0,1))
 ```
 
 ```{r}
