@@ -30,45 +30,22 @@ datos$mes <- as.numeric(format(fechas,format = "%m"))
 datos$dia <- as.numeric(format(fechas,format = "%d"))
 ```
 
-```{r message=FALSE, warning=FALSE}
-##Pegando variables M1, M2 y M3 de los depósitos del sistema financiero.
-library(dplyr)
-library(tidyverse)
-library(lubridate)
-
-depositos <- read_excel("archivos/Depositos_Sistema_Financiero.xlsx", skip = 8)
-depositos <- depositos[,c(1,19,20,21)]
-names(depositos)[1] <- "Fecha"
-names(depositos)[2] <- "M1"
-names(depositos)[3] <- "M2"
-names(depositos)[4] <- "M3"
-
-depositos <- depositos %>% mutate(Fecha = ymd(Fecha)) %>%
-  group_by(Fecha) %>%
-  expand(Fecha = seq(floor_date(Fecha, unit = "week"),
-       ceiling_date(Fecha, unit="week")-days(1), by="day"), M1,M2,M3) %>%
-as.data.frame()
-
-depositos <- depositos %>% filter(Fecha >= "2012-01-01" & Fecha <= "2018-12-31")
-
-data <- full_join(datos,depositos,by="Fecha")
-```
 
 ```{r}
 #Dia de la semana
-data$dia_semana <- weekdays(data$Fecha)
+datos$dia_semana <- weekdays(datos$Fecha)
 
 #Numero de la semana por mes
 monthweeks <- function(x) {
    as.character(ceiling(as.numeric(format(x, "%d")) / 7))
 }
-data$numero_semana <- factor(lapply(data$Fecha,monthweeks),levels = c("1","2","3","4","5"))
+datos$numero_semana <- factor(lapply(datos$Fecha,monthweeks),levels = c("1","2","3","4","5"))
 ```
 
 
 ```{r}
 ###Dias festivos
-data$Fecha <- as.Date(data$Fecha)
+datos$Fecha <- as.Date(datos$Fecha)
 pascua <- function(x){#Dado un año retorna la fecha de la pascua.
   #https://www.uv.es/sofuen/actividades/actividad4/fechadepascua.pdf
   x <- as.numeric(x)
@@ -108,6 +85,12 @@ festivo <- function(x){#Dada una fecha retornar si es festivo
   
   anio <- format(x,format = "%Y")
   
+  if(weekdays(x) == "domingo"){
+    return(TRUE)
+  }else{
+    
+  
+  
   festivos <- c(as.Date(format(paste(as.character(anio),"-01-01",sep = ""),format = "%Y-%m-%d")),
                 mover_festivo(as.Date(format(paste(as.character(anio),"-01-06",sep = ""),format = "%Y-%m-%d"))),
                 mover_festivo(as.Date(format(paste(as.character(anio),"-03-19",sep = ""),format = "%Y-%m-%d"))),
@@ -128,199 +111,83 @@ festivo <- function(x){#Dada una fecha retornar si es festivo
                 as.Date(format(paste(as.character(anio),"-12-25",sep = ""),format = "%Y-%m-%d")))
   
   return(x %in% festivos)
-  
+  }
   
 }
 
-data$feriado <- lapply(data$Fecha,festivo)
-data$feriado <- as.integer(data$feriado == "TRUE")
-data$feriado <- factor(data$feriado,levels = c(0,1))
+datos$feriado <- lapply(datos$Fecha,festivo)
+datos$feriado <- as.integer(datos$feriado == "TRUE")
+datos$feriado <- factor(datos$feriado,levels = c(0,1))
 ```
 
-```{r}
-#Tasa de desempleo
-desempleo <- read_excel("archivos/Tasa_desempleo.xlsx", skip = 8)
-desempleo <- desempleo[,c(1,3)]
-names(desempleo)[1] <- "Fecha"
-names(desempleo)[2] <- "tasa_desempleo"
-desempleo$Fecha <- as.Date(paste(desempleo$Fecha,"-01",sep = ""),format = "%Y-%m-%d")
-
-desempleo <- desempleo %>% mutate(Fecha = ymd(Fecha)) %>%
-  group_by(Fecha) %>%
-  expand(Fecha = seq(floor_date(Fecha, unit = "month"),
-       ceiling_date(Fecha, unit="month")-days(1), by="day"), tasa_desempleo) %>%
-as.data.frame()
-
-desempleo <- desempleo %>% filter(Fecha >= "2012-01-01" & Fecha <= "2018-12-31")
-
-data <- full_join(data,desempleo,by="Fecha")
-
-```
-
-
-```{r}
-#Inflacion
-inflacion <- read_excel("archivos/Inflacion.xlsx", skip = 7)
-inflacion <- inflacion[,c(1,2)]
-names(inflacion)[1] <- "Fecha"
-names(inflacion)[2] <- "Inflacion"
-inflacion$Fecha <- as.Date(paste(inflacion$Fecha,"-01",sep = ""),format = "%Y-%m-%d")
-inflacion <- inflacion %>% mutate(Fecha = ymd(Fecha)) %>%
-  group_by(Fecha) %>%
-  expand(Fecha = seq(floor_date(Fecha, unit = "month"),
-       ceiling_date(Fecha, unit="month")-days(1), by="day"), Inflacion) %>%
-as.data.frame()
-inflacion <- inflacion %>% filter(Fecha >= "2012-01-01" & Fecha <= "2018-12-31")
-data <- full_join(data,inflacion,by="Fecha")
-```
-
-```{r}
-#TRM Dolar
-trm <- read_excel("archivos/Trm.xlsx", skip = 7)
-names(trm)[1] <- "Fecha"
-names(trm)[2] <- "Trm"
-trm <- trm %>% filter(Fecha >= "2011-12-31" & Fecha <= "2018-12-31")
-data <- full_join(data,trm,by="Fecha")
-
-```
-
-```{r message=FALSE}
-#Icc
-icc <- read_excel("archivos/ICC.xlsx")
-icc <- icc[,c(1,2)]
-names(icc)[1] <- "Fecha"
-names(icc)[2] <- "icc"
-#icc$Fecha <- as.Date(paste(icc$Fecha,"-01",sep = ""),format = "%Y-%m-%d")
-icc <- icc %>% mutate(Fecha = ymd(Fecha)) %>%
-  group_by(Fecha) %>%
-  expand(Fecha = seq(floor_date(Fecha, unit = "month"),
-       ceiling_date(Fecha, unit="month")-days(1), by="day"), icc) %>%
-as.data.frame()
-icc <- icc %>% filter(Fecha >= "2012-01-01" & Fecha <= "2018-12-31")
-data <- full_join(data,icc,by="Fecha")
-```
-
-```{r}
-#IPC
-ipc <- read_excel("archivos/IPC.xlsx")
-#icc <- icc[,c(1,2)]
-names(ipc)[1] <- "Fecha"
-names(ipc)[2] <- "ipc"
-ipc <- ipc %>% mutate(Fecha = ymd(Fecha)) %>%
-  group_by(Fecha) %>%
-  expand(Fecha = seq(floor_date(Fecha, unit = "month"),
-       ceiling_date(Fecha, unit="month")-days(1), by="day"), ipc) %>%
-as.data.frame()
-ipc <- ipc %>% filter(Fecha >= "2012-01-01" & Fecha <= "2018-12-31")
-data <- full_join(data,ipc,by="Fecha")
-```
 
 ```{r}
 #Importaciones
 importaciones <- read_excel("archivos/importaciones.xlsx")
-data <- as.data.frame(cbind(data, importaciones))
+datos <- as.data.frame(cbind(datos, importaciones))
 ```
 
 ```{r}
-#Paginas web vehiculos, unidades vendidas al mes, vehiculos e incremento a la gasolina
-data <- data %>% filter(Fecha <= "2018-06-30")
+#Paginas web vehiculos, unidades vendidas al mes, vehiculos,unidadesmenos1,
+datos <- datos %>% filter(Fecha <= "2018-06-30")
 consultas <- read_excel("Archivos/consultas.xlsx")
-data <- as.data.frame(cbind(data, consultas))
+datos <- as.data.frame(cbind(datos, consultas))
 ```
+
 
 ###Separación en 3 bases de datos.
 ```{r}
-database_2012_2016 <- data %>% filter(Fecha >= "2011-12-31" & Fecha <= "2016-12-31")
-database_2017 <- data %>% filter(Fecha >= "2016-12-31" & Fecha <= "2017-06-30")
-database_2018 <- data %>% filter(Fecha >= "2017-12-31" & Fecha <= "2018-06-30")
+database_2012_2016 <- datos %>% filter(Fecha >= "2011-12-31" & Fecha <= "2016-12-31")
+database_2017 <- datos %>% filter(Fecha >= "2016-12-31" & Fecha <= "2017-06-30")
+database_2017_2 <-  datos %>% filter(Fecha >= "2017-06-30" & Fecha <= "2017-12-31")
+database_2018 <- datos %>% filter(Fecha >= "2017-12-31" & Fecha <= "2018-06-30")
 database_2018 <- database_2018[,-2]
 ```
 
 
 --------------------------------------------------------------------------------------------------------
 
-### Modelo Lineal Generalizado con repuesta tipo Poisson
+### Modelo Lineal Generalizado con respuesta tipo Poisson
 
 ```{r, message=FALSE}
 library(rsq)
 library(knitr)
-mod1 <- glm(Unidades ~ mes + dia + M3 + dia_semana + numero_semana + feriado + tasa_desempleo + Inflacion + Trm + icc + impo + tu_carro + revista_motor + carroya + unidades_vendidasalmes+ipc, family = poisson(link = "log"), data = database_2012_2016)
+mod1 <- glm(Unidades ~  mes + dia  + dia_semana + numero_semana +feriado+ impo + Unidadesmenos1+ unidades_vendidasalmes+unidades_semanamenos1+Unidadesmenos2 + Unidadesmenos4 , family = poisson(link = "log"), data = database_2012_2016)
 
-
-backward <- step(mod1, trace = 0)
-formula(backward)
-mod1final <- glm(Unidades ~ mes + dia + M3 + dia_semana + numero_semana + feriado + tasa_desempleo + Inflacion + Trm + icc + impo + tu_carro + revista_motor + carroya + unidades_vendidasalmes, family = poisson(link = "log"), data = database_2012_2016)
 
 R2mod1 <- data.frame(`R cuadrado modelo` = rsq(mod1), `R cuadrado ajustado` = rsq(mod1, adj = TRUE))
 
-R2mod1final <- data.frame(`R cuadrado modelo` = rsq(mod1final), `R cuadrado ajustado` = rsq(mod1final, adj = TRUE))
-
 R2mod1 %>% kable(caption = "Modelo Lineal Generalizado sin stepwise", digits = 4)
-R2mod1final %>% kable(caption = "Modelo Lineal Generalizado con stepwise", digits = 4)
 ```
 
-Los modelo anteriores arrojan resultados muy similares en cuanto al $R^2$, sin embargo por el principio de parsimonia el modelo que se elige es el modelo obtenido a partir del stepwise hacia atrás.
 
 ```{r}
-summary(mod1final)
+summary(mod1)
 ```
 
-
-
-## Modelo Aditivo Generalizado (GAM) repuesta tipo Poisson 
-
-```{r, message=FALSE}
-library(mgcv)
-
-mod2 <- gam(Unidades ~ s(mes) + s(dia) + s(M3) + dia_semana + numero_semana + feriado + s(tasa_desempleo) + s(Inflacion) + s(Trm) + s(icc) + s(impo) + s(tu_carro) + s(revista_motor) + s(carroya) + s(unidades_vendidasalmes) + s(ipc), family = poisson(link = "log"), data = database_2012_2016)
-
-R2mod2 <- data.frame(`R cuadrado modelo` = rsq(mod2), `R cuadrado ajustado` = rsq(mod2, adj = TRUE))
-
-R2mod2 %>% kable(caption = "Modelo Aditivo Generalizado con respuesta Poisson", digits = 3)
-```
-
-El $R^2$ obtenido con la metodologia del modelo generalizado aditivo es un poco mayor al obtenido en el modelo anterior.
-
+Predicciones y R^2 para 2017 #validacion del modelo
 ```{r}
-summary(mod2)
-```
+predicion2017 <- round(predict(mod1, newdata = database_2017, type = "response", 0))
 
-## Modelo Aditivo Generalizado (GAM) repuesta tipo Normal 
-
-```{r}
-library(mgcv)
-
-mod3 <- gam(Unidades ~ s(mes) + s(dia) + s(M3) + dia_semana + numero_semana + feriado + s(tasa_desempleo) + s(Inflacion) + s(Trm) + s(icc) + s(impo) + s(tu_carro) + s(revista_motor) + s(carroya) + s(unidades_vendidasalmes) + s(ipc), family = gaussian(link = "identity"), data = database_2012_2016)
-
-R2mod3 <- data.frame(`R cuadrado modelo` = rsq(mod3), `R cuadrado ajustado` = rsq(mod3, adj = TRUE))
-
-R2mod3 %>% kable(caption = "Modelo Aditivo Generalizado con respuesta Normal", digits = 3)
-```
-Usando como función de enlace la distribución normal, se observa que el $R^2$ disminuye considerablemente.
-
-```{r}
-summary(mod3)
-```
-
-
-Dado los tres modelo anteriores, se elige el modelo 2 el cual es un modelo aditivo generalizado con respuesta Poisson para llevar a cabo las respectivas prediciones.
-
-## Primer archivo plano
-
-```{r}
-predicion2012_1016 <- round(predict(mod2, data = database_2012_2016, type = "response"), 0)
-predicion2012_1016datos <- data.frame(database_2012_2016$Fecha, predicion2012_1016)
-write.table(predicion2012_1016datos, "PrimerArchivoPlano.csv", sep=",")
-```
-
-```{r}
-predicion2017 <- round(predict(mod1, newdata = database_2017, type = "response"), 0)
-
-R2_2017 <- sum(((database_2017$Unidades-predicion2017)^2))/sum(((database_2017$Unidades-mean(database_2017$Unidades))^2))
-
+R2_2017 <- 1 - sum(((database_2017$Unidades-predicion2017)^2))/sum(((database_2017$Unidades-mean(database_2017$Unidades))^2))
 R2_2017
+
 ```
+
+######Archivo plano de 2012 a 2016
 ```{r}
-
+predicion2012_2016 <- round(predict(mod1, data = database_2012_2016, type = "response"), 0)
+predicion2012_2016datos <- data.frame(database_2012_2016$Fecha, predicion2012_2016)
+names(predicion2012_2016datos)[1] <- "Fecha"
+names(predicion2012_2016datos)[2] <- "Unidades"
+write.csv(predicion2012_2016datos, "PrimerArchivoPlano.csv",row.names = FALSE)
 ```
 
+######Archivo plano del primer semestre del 2018
+```{r}
+predicion2018 <- round(predict(mod1, newdata = database_2018, type = "response"), 0)
+predicion2018datos <- data.frame(database_2018$Fecha, predicion2018)
+names(predicion2018datos)[1] <- "Fecha"
+names(predicion2018datos)[2] <- "Unidades"
+write.csv(predicion2018datos, "SegundoArchivoPlano.csv",row.names = FALSE)
+```
