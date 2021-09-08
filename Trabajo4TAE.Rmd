@@ -1,16 +1,57 @@
+<div class=text-justify>
 ---
-title: "Trabajo4TAE"
-author: "Jhonier Santiago Serna Cardona"
-date: "4/9/2021"
-output: html_document
+title: "PREDICCIÓN DEL NÚMERO DE VEHÍCULOS REGISTRADOS EN EL SISTEMA DE TRÁNSITO NACIONAL"
+author:
+- Carlos Mario Calle González
+- Catherine Andrea Córdoba Espinosa
+- Allison Piedrahita García
+- Santiago Ramírez Zapata
+- Jhonier Santiago Serna Cardona
+date: "07/09/2021"
+output:
+  html_document:
+    theme: united
+    highlight: tango
+  pdf_document: default
 ---
+
+**Objetivo**: Crear un modelo para predecir el número de vehículos registrados diariamente en el Registro Único Nacional de Tránsito (RUNT) para el año 2018 teniendo en cuenta que no debe haber una variación mayor al 10% entre el $R^2$ calculado para los datos de entrenamiento y los datos de validación. 
+
+### Introducción
+En el mundo actual donde el tiempo se convierte en dinero y la toma rápida de decisiones es un factor determinante para lograr rendimientos esperados, la capacidad de pronosticar y deducir resultados representa una gran ventaja competitiva. Por lo anterior, las técnicas de predicción juegan un papel de suma importancia en todo tipo de aplicaciones, como por ejemplo las relacionadas con diseños de estrategias, análisis de riesgos, compras y ventas, análisis de patrones, entre otros; ya que a través de técnicas computacionales y análisis de datos se logra inferir la posibilidad de resultados en distintas situaciones, previas a su consecución [1]. Para ilustrar lo anterior, el presente trabajo busca crear un modelo que prediga el número de vehículos registrados diariamente en el RUNT. Esto traería una gran ventaja organizacional para el sistema de tránsito nacional, pues se podría preparar con anterioridad toda la logística necesaria en cada registro, evitando así molestias en sus usuarios por fallas en el sistema, caídas en la red por gran cantidad de ingresos simultáneos, colas innecesariamente largas, entre otras.
+
+### Contextualización
+Se cuenta con una base de datos con $2192$ registros de la cantidad de vehículos inscritos en el RUNT. Las observaciones que se tienen son diarias entre el año 2012 y el 2017. Con el fin de crear una base de datos robusta que logre explicar la cantidad de vehículos registrados en el Registro Único Nacional de Tránsito, se agregan las variables explicativas que se describen a continuación:
+
+-   **$Año$:** Hace referencia al año en el cual se encuentra la observación en la base de datos. Puede variar de 2012 a 2017.
+-   **$Mes$:** Variable categórica que determina el número del mes del año en el que se realizó el registro de vehículos en el RUNT. La variable toma valores entre 1 y 12 dado la cantidad de meses en un año (1:enero, 2:febrero, 3:marzo, 4:abril, 5:mayo, 6:junio, 7:julio, 8:agosto, 9:septiembre, 10:octubre, 11:noviembre, 12:diciembre)
+-   **$Día$:** Se refiere al número del día del mes en el que fue registrada la observación, tiene variaciones entre 1 y 31. 
+-   **$Día de la semana$:** Se refiere al día de la semana en el que se realizó el registro de un determinado número de vehículos en el RUNT. Es una variable categórica (Lunes, Martes, Miércoles, Jueves, Viernes, Sábado, Domingo)
+-    **$Número de semana en el mes$:** Se crea la variable con el fin de determinar el número de la semana correspondiente al mes. Puede tomar valores entre 1 y 5. 
+-   **$Feriado$:** Variable categórica que determina los días que no son laborables debido a alguna festividad. 
+-   **$Importaciones$:** Describe las importaciones de vehículos de transporte privado del mes inmediatamente anterior. 
+-   **$TuCarro, Carroya, RevistaMotor$:** Comparaciones hechas con Google Trend de Tu carro, revista Motor, Carroya; se sospecha de esta relación con la compra de vehículo ya que es usual revisar estos sitios web para consultar los precios previo a una compra [2].
+-   **$Unidades_vendidas_por_mes$:** Hace referencia al número de carros vendidos mensualmente. Se espera que esta variable ayude a explicar cuántos carros se inscriben en el RUNT.
+-   **$Unidades_semanamenos1$:** Es la variación existente entre la suma de los registros de la semana k del año N y N-1. Donde k ϵ [1, 52] y N ϵ [2012, 2018]. Se tiene la hoipótesis de que la serie se comporta ciclicamente, por lo que estaa variable puede contener esa estacionalidad. 
+-   **$Unidadesmenos1, 2, 3, 4$:** Son variables que describen parte de la estacionalidad de la serie, dadas que son las diferencias entre las unidades registradas año a año. 
+
+Finalmente, se construye una base de datos que contiene en total 18 variables en total, contando con la variable respuesta, la fecha de la observación y las variables explicativas agregadas.
+
+### Procesamiento
+Teniendo en cuenta que el objetivo del trabajo plantea la división de resultados en rangos de año, se realizan las siguientes divisiones de la base de datos:
+
+-   Datos del 2012-2016
+-   Datos del primer semestre de 2017
+-   Datos del segundo semestre de 2017
+-   Datos del primer semestre de 2018
+
+Se procesa la base de datos para agregar las variables explicativas y dividirla en los años en cuestión.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
-
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 library("readxl")
 datos <- read_excel("archivos/registros_autos_entrenamiento.xlsx")
 
@@ -22,7 +63,7 @@ Fechas_2018['Unidades'] <- NA
 datos <- rbind(datos,Fechas_2018)
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 ##Creamos variable año, mes y dia.
 fechas <- as.Date(datos$Fecha)
 datos$anio <- as.numeric(format(fechas,format = "%Y"))
@@ -31,7 +72,7 @@ datos$dia <- as.numeric(format(fechas,format = "%d"))
 ```
 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 #Dia de la semana
 datos$dia_semana <- weekdays(datos$Fecha)
 
@@ -43,7 +84,7 @@ datos$numero_semana <- factor(lapply(datos$Fecha,monthweeks),levels = c("1","2",
 ```
 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 ###Dias festivos
 datos$Fecha <- as.Date(datos$Fecha)
 pascua <- function(x){#Dado un año retorna la fecha de la pascua.
@@ -121,22 +162,25 @@ datos$feriado <- factor(datos$feriado,levels = c(0,1))
 ```
 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 #Importaciones
 importaciones <- read_excel("archivos/importaciones.xlsx")
 datos <- as.data.frame(cbind(datos, importaciones))
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 #Paginas web vehiculos, unidades vendidas al mes, vehiculos,unidadesmenos1,
+library(magrittr)
+library(dplyr)
+library("readxl")
 datos <- datos %>% filter(Fecha <= "2018-06-30")
 consultas <- read_excel("Archivos/consultas.xlsx")
 datos <- as.data.frame(cbind(datos, consultas))
 ```
 
+A continuación, se realiza la división de la base de datos según los requerimientos y objetivos planteados:
 
-###Separación en 3 bases de datos.
-```{r}
+```{r message=FALSE, warning=FALSE}
 database_2012_2016 <- datos %>% filter(Fecha >= "2011-12-31" & Fecha <= "2016-12-31")
 database_2017 <- datos %>% filter(Fecha >= "2016-12-31" & Fecha <= "2017-06-30")
 database_2017_2 <-  datos %>% filter(Fecha >= "2017-06-30" & Fecha <= "2017-12-31")
@@ -145,36 +189,71 @@ database_2018 <- database_2018[,-2]
 ```
 
 
---------------------------------------------------------------------------------------------------------
 
-### Modelo Lineal Generalizado con respuesta tipo Poisson
+### Desarrollo estadístico
+#### Modelo 1
+En teoría de probabilidad y estadística, la distribución de Poisson es una distribución de probabilidad discreta que expresa, a partir de una frecuencia de ocurrencia media, la probabilidad de que ocurra un determinado número de eventos que ocurre en un intervalo temporal o espacial de tamaño dado. Concretamente, se especializa en la probabilidad de ocurrencia de sucesos con probabilidades muy pequeñas, o sucesos "raros".
+Fue descubierta por Siméon-Denis Poisson, que la dio a conocer en 1838 en su trabajo Recherches sur la probabilité des jugements en matières criminelles et matière civile (Investigación sobre la probabilidad de los juicios en materias criminales y civiles) [3].
 
-```{r, message=FALSE}
+La función de masa de probabilidad de la distribución de Poisson se presenta en la Ecuación 1.
+
+$𝑓(𝑥,𝜆)= \frac{e^{-𝜆}𝜆^x}{𝑥!}\ ;   𝑥=0,1,…∞   (1)$
+
+De donde:
+
+-   x es el número de ocurrencias del evento o fenómeno (la función nos da la probabilidad de que el evento suceda precisamente k veces).
+-   λ es un parámetro positivo que representa el número de veces que se espera que ocurra el fenómeno durante un intervalo dado, cuyo valor coincide con el valor de varianza, lo que define para esta distribución la llamada propiedad de “equidispersión”.
+-   Función exponencial (e) es la base de los logaritmos naturales (e = 2,71828...)
+
+Por otra parte, los modelos lineales generalizados son una generalización flexible de la regresión lineal ordinaria que permite variables de respuesta que tienen modelos de distribución de errores distintos de una distribución normal [4].
+
+Un requisito del Modelo Lineal Generalizado MLG es que la distribución de la variable de respuesta Y pertenezca a la familia exponencial. Se modela para que dependa de unas variables independientes 𝑋 de la forma que se presenta en la Ecuación 2.
+
+$𝐸(𝒀) = 𝜇 = 𝑔^{−1} (𝑿𝜷)$
+
+Donde:
+
+-   La media de 𝑌,$𝐸[𝑌]=𝜇$
+-   $𝑋𝛽$ es el predictor lineal, con 𝛽 un vector de parámetros desconocidos, generalmente g es conocida como la función de enlace o de linkeo. Para estimar 𝛽, se emplean métodos de verosimilitud, quasiverosimilitud o en ocasiones estadística bayesiana.
+
+Teniendo en cuenta lo anterior, se plantea un Modelo Lineal Generalizado con respuesta Poisson que se evidencia en los siguientes algoritmos y cuya medida de $R^2$ se presenta a continuación:
+
+```{r message=FALSE, warning=FALSE}
 library(rsq)
 library(knitr)
 mod1 <- glm(Unidades ~  mes + dia  + dia_semana + numero_semana +feriado+ impo + Unidadesmenos1+ unidades_vendidasalmes+unidades_semanamenos1+Unidadesmenos2 + Unidadesmenos4 , family = poisson(link = "log"), data = database_2012_2016)
 
-
 R2mod1 <- data.frame(`R cuadrado modelo` = rsq(mod1), `R cuadrado ajustado` = rsq(mod1, adj = TRUE))
 
-R2mod1 %>% kable(caption = "Modelo Lineal Generalizado sin stepwise", digits = 4)
+R2mod1 %>% kable(caption = "Modelo Lineal Generalizado", digits = 4, col.names = c("R^2 Modelo", "R^2 Ajustado"), align = "c")
 ```
+Posteriormente, se obtienen los parámetros del modelo como se muestra a continuación:
 
+![**Figura 1.** Parámetros ajustados del modelo](Archivos/Imagen1.PNG){width=width height=height}
+
+Y finalmente, se obtiene la ecuación que describe al modelo elaborado:
+
+![](Archivos/Imagen2.PNG){width=width height=height}
+
+Asimismo, se verifican los supuestos de homocedasticidad, media cero e independencia y se obtienen las medidas de dispersión para los errores del modelo como se muestra a continuación:
+
+![**Figura 2.** Medidas de los residuales](Archivos/Imagen3.PNG){width=width height=height}
 
 ```{r}
-summary(mod1)
+plot(residuals(mod1) ~ predict(mod1,type="response"),xlab=expression(hat(mu)),ylab="Residuales",pch=20,col="red")
+abline(h=0)
 ```
 
-Predicciones y R^2 para 2017 #validacion del modelo
+Para realizar la validación del modelo, se realiza la predicción para el primer semestre del año 2017 y se obtiene el $R^2$ correspondiente:
+
 ```{r}
 predicion2017 <- round(predict(mod1, newdata = database_2017, type = "response", 0))
 
 R2_2017 <- 1 - sum(((database_2017$Unidades-predicion2017)^2))/sum(((database_2017$Unidades-mean(database_2017$Unidades))^2))
-R2_2017
-
+kable(R2_2017, col.names = "R^2 Predicción 2017", align = "c", digits = 4)
 ```
 
-######Archivo plano de 2012 a 2016
+Finalmente, dados los requerimientos del trabajo, se obtienen los archivos planos de las predicciones para los años 2012-2016 y el primer semestre de 2018.
 ```{r}
 predicion2012_2016 <- round(predict(mod1, data = database_2012_2016, type = "response"), 0)
 predicion2012_2016datos <- data.frame(database_2012_2016$Fecha, predicion2012_2016)
@@ -183,7 +262,6 @@ names(predicion2012_2016datos)[2] <- "Unidades"
 write.csv(predicion2012_2016datos, "PrimerArchivoPlano.csv",row.names = FALSE)
 ```
 
-######Archivo plano del primer semestre del 2018
 ```{r}
 predicion2018 <- round(predict(mod1, newdata = database_2018, type = "response"), 0)
 predicion2018datos <- data.frame(database_2018$Fecha, predicion2018)
@@ -191,3 +269,17 @@ names(predicion2018datos)[1] <- "Fecha"
 names(predicion2018datos)[2] <- "Unidades"
 write.csv(predicion2018datos, "SegundoArchivoPlano.csv",row.names = FALSE)
 ```
+
+### Conclusiones y Análisis de resultados
+-   El Modelo Lineal Generalizado, representa una excelente alternativa para la elaboración de modelos relacionadas con respuesta Poisson. En este caso, el modelo creado logra capturar el comportamiento de la variable dependiente, lo cual se ve reflejado en el $R^2$ obtenido.
+-   Los residuales del modelo presentan medidas de dispersión bajas y se comportan de buena manera, cumpliendo supuestos de varianza constante, media cero e independencia.
+-   La mayoría de las variables que alimentan el modelo son construidas a partir de características dadas por la fecha, por lo que el día y sus elementos asociados son importantes a la hora de pronosticar las unidades registradas.
+-   La diferencia en el $R^2$ de entrenamiento y validación es de 8.18%, lo cual refleja un buen comportamiento en el modelo elaborado.
+-   El modelo podría mejorarse por medio de la adición de variables explicativas sobre la compra de vehículos. En este trabajo, solo se reune una parte de las encontradas en la literatura, sin embargo, podría haber otras que mejoren el desempeño.
+
+### Referencias
+
+    [1].  "Qué es un modelo predictivo", Agenciab12.com, 2020. [En línea]. Disponible en: https://agenciab12.com/noticia/que-es-modelo-predictivo-como-aplica-negocio.
+    [2] "Informe del sector automotor", Andi.com.co, 2021. [En línea]. Disponible en: http://www.andi.com.co/Uploads/2.%20INFORME%20DEL%20SECTOR%20AUTOMOTOR%20A%20FEBRERO%202017.pdf. [Acceso: 08- Sep- 2021].
+    [3].    "Distribución de Poisson - Wikipedia, la enciclopedia libre", Es.wikipedia.org. [en línea]. Disponible: https://es.wikipedia.org/wiki/Distribuci%C3%B3n_de_Poisson. [Acceso: 08- Sep- 2021].
+    [4].   "Modelo lineal generalizado - Wikipedia, la enciclopedia libre", Es.wikipedia.org. [En línea]. Disponible en: https://es.wikipedia.org/wiki/Modelo_lineal_generalizado. [Acceso: 08- Sep- 2021].
